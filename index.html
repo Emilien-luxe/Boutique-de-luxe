@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boutique de Luxe — Emilien</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        * { font-family: 'Inter', 'Segoe UI', sans-serif; }
+        body { background: #050505; color: #f0f0f0; }
+
+        .card { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 20px; transition: 0.3s; cursor: default; }
+        .card:hover { border-color: #c9a96e; transform: translateY(-4px); box-shadow: 0 20px 40px rgba(201,169,110,0.08); }
+
+        .badge-condition { background: rgba(201,169,110,0.1); color: #c9a96e; border: 1px solid rgba(201,169,110,0.2); }
+
+        .modal-bg { background: rgba(0,0,0,0.96); backdrop-filter: blur(12px); display: none; position: fixed; inset: 0; z-index: 100; justify-content: center; align-items: center; padding: 1rem; }
+        .modal-bg.open { display: flex; }
+
+        .gallery-box { position: relative; width: 100%; height: 380px; background: #000; border-radius: 16px; overflow: hidden; border: 1px solid #1a1a1a; }
+        .gallery-img { width: 100%; height: 100%; object-fit: contain; padding: 12px; display: none; }
+        .gallery-img.active { display: block; }
+        .thumb { width: 56px; height: 56px; border-radius: 8px; cursor: pointer; opacity: 0.4; border: 2px solid transparent; object-fit: cover; transition: 0.2s; }
+        .thumb.active { border-color: #c9a96e; opacity: 1; }
+        .arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; transition: 0.2s; border: none; }
+        .arrow:hover { background: rgba(201,169,110,0.3); }
+
+        .tag-pill { display: inline-block; background: rgba(201,169,110,0.08); color: #c9a96e; border: 1px solid rgba(201,169,110,0.15); padding: 4px 12px; border-radius: 999px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; }
+
+        @keyframes pop { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+        .card { animation: pop 0.4s ease-out both; }
+
+        .skeleton { background: linear-gradient(90deg, #111 25%, #1a1a1a 50%, #111 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 20px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- HEADER -->
+    <header class="border-b border-white/5 sticky top-0 z-50 bg-[#050505]/90 backdrop-blur-xl">
+        <div class="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-black tracking-tighter uppercase">BOUTIQUE <span style="color:#c9a96e">DE LUXE</span></h1>
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-0.5">Articles japonais · Occasion premium</p>
+            </div>
+            <div id="stock-count" class="text-[11px] text-gray-500 font-bold uppercase tracking-widest"></div>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <div class="max-w-6xl mx-auto px-6 pt-16 pb-10 text-center">
+        <p class="text-[11px] uppercase tracking-[0.2em] font-black mb-4" style="color:#c9a96e">✦ Sélection exclusive</p>
+        <h2 class="text-5xl font-black tracking-tighter mb-4">Nos articles <br><span class="text-gray-600">disponibles</span></h2>
+        <p class="text-gray-500 text-sm max-w-md mx-auto">Pièces sourcées directement au Japon. Chaque article est inspecté et sélectionné avec soin.</p>
+    </div>
+
+    <!-- GRID -->
+    <main class="max-w-6xl mx-auto px-6 pb-24">
+        <!-- Skeletons pendant le chargement -->
+        <div id="skeletons" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="skeleton h-80"></div>
+            <div class="skeleton h-80"></div>
+            <div class="skeleton h-80"></div>
+        </div>
+        <!-- Articles -->
+        <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
+        <!-- Vide -->
+        <div id="empty" class="hidden text-center py-32">
+            <p class="text-5xl mb-4">🏷️</p>
+            <p class="text-gray-500 font-bold uppercase tracking-widest text-sm">Aucun article disponible pour le moment</p>
+            <p class="text-gray-600 text-xs mt-2">Revenez bientôt, le stock se renouvelle régulièrement.</p>
+        </div>
+    </main>
+
+    <!-- MODAL -->
+    <div id="modal" class="modal-bg" onclick="if(event.target===this) closeModal()">
+        <div class="bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 max-w-4xl w-full relative max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <button onclick="closeModal()" class="absolute -top-4 -right-4 w-10 h-10 rounded-full font-black shadow-xl z-10 flex items-center justify-center text-white" style="background:#c9a96e">✕</button>
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- Galerie -->
+                <div class="flex-1">
+                    <div class="gallery-box">
+                        <div id="m-slides"></div>
+                        <button class="arrow left-3" onclick="changeSlide(-1)">❮</button>
+                        <button class="arrow right-3" onclick="changeSlide(1)">❯</button>
+                        <div id="m-counter" class="absolute bottom-3 right-3 bg-black/70 px-3 py-1 rounded-full text-[10px] text-gray-400">1 / 1</div>
+                    </div>
+                    <div id="m-thumbs" class="flex gap-2 mt-3 overflow-x-auto pb-1"></div>
+                </div>
+                <!-- Infos -->
+                <div class="w-full lg:w-72 flex flex-col justify-between gap-4">
+                    <div class="space-y-4">
+                        <div>
+                            <span id="m-condition-badge" class="tag-pill"></span>
+                        </div>
+                        <h2 id="m-title" class="text-lg font-black leading-snug"></h2>
+                        <div class="border-t border-white/5 pt-4">
+                            <p class="text-[9px] text-gray-500 uppercase font-black tracking-widest mb-1">Prix de vente</p>
+                            <p id="m-price" class="text-4xl font-black" style="color:#c9a96e"></p>
+                        </div>
+                    </div>
+                    <div class="space-y-3 pt-4 border-t border-white/5">
+                        <p class="text-[10px] text-gray-600 text-center uppercase tracking-widest font-bold">Intéressé(e) ? Contactez-nous</p>
+                        <a id="m-contact-mail" href="#" class="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-black text-xs uppercase transition text-white" style="background:#c9a96e; color:#000">
+                            ✉️ Envoyer un message
+                        </a>
+                        <a id="m-contact-wa" href="#" target="_blank" class="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-black text-xs uppercase bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition">
+                            💬 WhatsApp
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-white/5 py-10 text-center">
+        <p class="text-gray-600 text-xs uppercase tracking-widest font-bold">© Boutique de Luxe — Emilien · Articles sourcés au Japon</p>
+    </footer>
+
+    <script>
+        // ---- CONFIG ----
+        const BOUTIQUE_JSON_URL = 'https://raw.githubusercontent.com/Emilien-luxe/Boutique-de-luxe/main/boutique.json';
+        const CONTACT_EMAIL     = 'TON_EMAIL@gmail.com';   // ← remplace par ton email
+        const WHATSAPP_NUMBER   = '33XXXXXXXXX';           // ← remplace par ton numéro (sans +)
+
+        // ---- STATE ----
+        let items = [], currentSlide = 0, currentImages = [];
+
+        // ---- CHARGEMENT ----
+        async function loadBoutique() {
+            try {
+                const r = await fetch(BOUTIQUE_JSON_URL + '?t=' + Date.now());
+                items = await r.json();
+            } catch(e) {
+                items = [];
+            }
+            renderGrid();
+        }
+
+        function renderGrid() {
+            document.getElementById('skeletons').classList.add('hidden');
+            const grid  = document.getElementById('grid');
+            const empty = document.getElementById('empty');
+
+            if (!items.length) {
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            grid.classList.remove('hidden');
+            grid.innerHTML = '';
+
+            document.getElementById('stock-count').innerText = `${items.length} article${items.length > 1 ? 's' : ''} en stock`;
+
+            items.forEach((item, idx) => {
+                const price = item.custom_price || '— €';
+                const card  = document.createElement('div');
+                card.className = 'card p-4 flex flex-col';
+                card.style.animationDelay = (idx * 0.05) + 's';
+                card.onclick = () => openModal(item);
+                card.innerHTML = `
+                    <div class="relative w-full h-56 bg-black/50 rounded-2xl overflow-hidden mb-4 border border-white/5">
+                        <img src="${item.image || ''}" loading="lazy" class="w-full h-full object-contain p-2 transition-transform duration-700 hover:scale-105" onerror="this.style.display='none'">
+                        <div class="absolute top-3 right-3 tag-pill">${item.condition || 'Occasion'}</div>
+                    </div>
+                    <div class="flex-1 flex flex-col justify-between">
+                        <h3 class="text-[13px] font-bold text-gray-200 line-clamp-2 italic mb-3">${item.title}</h3>
+                        <div class="flex justify-between items-end">
+                            <span class="text-2xl font-black" style="color:#c9a96e">${price}</span>
+                            <span class="text-[10px] text-gray-600 font-bold uppercase tracking-wide">Voir →</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // ---- MODAL ----
+        function openModal(item) {
+            currentImages = item.images?.length ? item.images : (item.image ? [item.image] : []);
+            currentSlide  = 0;
+
+            document.getElementById('m-title').innerText          = item.title || '';
+            document.getElementById('m-price').innerText          = item.custom_price || '— €';
+            document.getElementById('m-condition-badge').innerText = item.condition || 'Occasion';
+
+            const subject = encodeURIComponent(`Intérêt pour : ${item.title}`);
+            const body    = encodeURIComponent(`Bonjour,\n\nJe suis intéressé(e) par l'article suivant :\n${item.title}\nPrix affiché : ${item.custom_price || 'N/A'}\n\nMerci !`);
+            const waText  = encodeURIComponent(`Bonjour, je suis intéressé(e) par : ${item.title} (${item.custom_price || 'N/A'})`);
+
+            document.getElementById('m-contact-mail').href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+            document.getElementById('m-contact-wa').href   = `https://wa.me/${WHATSAPP_NUMBER}?text=${waText}`;
+
+            renderGallery();
+            document.getElementById('modal').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        function renderGallery() {
+            const slides = document.getElementById('m-slides');
+            const thumbs = document.getElementById('m-thumbs');
+            slides.innerHTML = '';
+            thumbs.innerHTML = '';
+            currentImages.forEach((src, i) => {
+                const img = document.createElement('img');
+                img.src = src; img.className = `gallery-img ${i === 0 ? 'active' : ''}`;
+                slides.appendChild(img);
+                const th = document.createElement('img');
+                th.src = src; th.className = `thumb ${i === 0 ? 'active' : ''}`;
+                th.onclick = () => goTo(i);
+                thumbs.appendChild(th);
+            });
+            updateCounter();
+        }
+
+        function goTo(idx) {
+            document.querySelectorAll('.gallery-img')[currentSlide]?.classList.remove('active');
+            document.querySelectorAll('.thumb')[currentSlide]?.classList.remove('active');
+            currentSlide = idx;
+            document.querySelectorAll('.gallery-img')[idx]?.classList.add('active');
+            document.querySelectorAll('.thumb')[idx]?.classList.add('active');
+            updateCounter();
+        }
+
+        function changeSlide(n) {
+            let next = currentSlide + n;
+            if (next >= currentImages.length) next = 0;
+            if (next < 0) next = currentImages.length - 1;
+            goTo(next);
+        }
+
+        function updateCounter() {
+            document.getElementById('m-counter').innerText = `${currentSlide + 1} / ${currentImages.length || 1}`;
+        }
+
+        // Fermer avec Échap
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+        // ---- INIT ----
+        loadBoutique();
+    </script>
+</body>
+</html>
