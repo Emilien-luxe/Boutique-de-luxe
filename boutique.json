@@ -378,7 +378,10 @@
     "seller_name": "ポール",
     "seller_stars": 4.98,
     "detected_at": "16:06",
-    "custom_price": "200,00 €"
+    "custom_price": "200,00 €",
+    "tags": [
+      "Louis vuitton"
+    ]
   },
   {
     "title": "Sac à main/cabas Miu Miu, cuir, finitions dorées.",
