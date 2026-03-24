@@ -95,7 +95,10 @@
     "seller_name": "わさを",
     "seller_stars": 4.98,
     "detected_at": "Ajouté",
-    "custom_price": "200,00 €"
+    "custom_price": "200,00 €",
+    "tags": [
+      "Louis vuitton"
+    ]
   },
   {
     "title": "Louis Vuitton Monogram Pochette Carte Visite Card Case (Porte-carte de visite)",
