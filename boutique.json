@@ -285,7 +285,10 @@
     "seller_name": "ドレミ",
     "seller_stars": 4.98,
     "detected_at": "15:28",
-    "custom_price": "250,00 €"
+    "custom_price": "250,00 €",
+    "tags": [
+      "Louis vuitton"
+    ]
   },
   {
     "title": "Louis Vuitton Monogram Monceau, acheté dans une boutique Louis Vuitton.",
