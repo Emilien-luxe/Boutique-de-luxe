@@ -410,7 +410,10 @@
     "seller_name": "ポール",
     "seller_stars": 4.98,
     "detected_at": "16:14",
-    "custom_price": "200,00 €"
+    "custom_price": "200,00 €",
+    "tags": [
+      "Miumiu"
+    ]
   },
   {
     "title": "Sac à main GUCCI Jackie en cuir et toile GG",
