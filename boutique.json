@@ -509,6 +509,9 @@
     "seller_name": "mmm",
     "seller_stars": 5,
     "detected_at": "Ajouté",
-    "custom_price": "120,00 €"
+    "custom_price": "120,00 €",
+    "tags": [
+      "Louis vuitton"
+    ]
   }
 ]
