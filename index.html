@@ -94,6 +94,27 @@
             opacity: 0.3; border: 2px solid transparent; object-fit: cover; transition: 0.3s; 
         }
         .thumb.active { border-color: var(--gold); opacity: 1; }
+
+        /* Tag pills */
+        .tag-pill {
+            padding: 7px 16px;
+            border-radius: 50px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.04);
+            color: #666;
+            transition: all 0.2s;
+        }
+        .tag-pill:hover { border-color: rgba(201,169,110,0.3); color: #aaa; }
+        .tag-pill.active {
+            background: rgba(201,169,110,0.12);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -111,6 +132,18 @@
         </div>
         <h2 class="text-5xl font-extrabold tracking-tighter mb-4">Articles <br><span class="text-gray-600">disponibles</span></h2>
     </section>
+
+    <!-- BARRE DE RECHERCHE + FILTRES TAGS -->
+    <div class="max-w-6xl mx-auto px-6 pb-8">
+        <!-- Search bar -->
+        <div style="position:relative;max-width:420px;margin-bottom:20px;">
+            <span style="position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;">🔍</span>
+            <input type="text" id="search-input" placeholder="Rechercher un article..." oninput="applySearch()" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:13px 16px 13px 44px;border-radius:50px;outline:none;color:#f0f0f0;font-size:13px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box;transition:0.2s;" onfocus="this.style.borderColor='rgba(201,169,110,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.08)'">
+        </div>
+
+        <!-- Tags pills -->
+        <div id="tag-filters" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;"></div>
+    </div>
 
     <main class="max-w-6xl mx-auto px-6 pb-24">
         <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
@@ -132,15 +165,13 @@
                     <div id="m-thumbs" class="flex gap-2 p-4 justify-center overflow-x-auto"></div>
                 </div>
 
-                <div class="w-full lg:w-[350px] p-8 lg:p-10 flex flex-col bg-[#0d0d0d]">
+                <div class="w-full lg:w-[320px] p-8 lg:p-10 flex flex-col bg-[#0d0d0d]">
                     <span id="m-condition-badge" class="inline-block px-3 py-1 rounded-lg bg-[#c9a96e]/10 text-[#c9a96e] text-[10px] font-black uppercase tracking-widest mb-4 border border-[#c9a96e]/20 self-start"></span>
-                    <h2 id="m-title" class="text-3xl font-extrabold leading-tight mb-4"></h2>
+                    <h2 id="m-title" class="text-2xl font-extrabold leading-snug mb-3"></h2>
+                    <div id="m-tags-display" class="flex flex-wrap gap-1.5 mb-5"></div>
                     <p id="m-price" class="text-4xl font-extrabold tracking-tighter" style="color:var(--gold)"></p>
-                    
                     <div class="mt-auto pt-8">
-                        <button onclick="closeModal()" class="w-full py-4 rounded-xl border border-white/10 text-gray-400 text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition">
-                            Fermer
-                        </button>
+                        <button onclick="closeModal()" class="w-full py-4 rounded-xl border border-white/10 text-gray-400 text-xs font-bold uppercase tracking-widest hover:bg-white/5 transition">Fermer</button>
                     </div>
                 </div>
             </div>
@@ -150,24 +181,83 @@
     <script>
         const BOUTIQUE_JSON_URL = 'https://raw.githubusercontent.com/Emilien-luxe/Boutique-de-luxe/main/boutique.json';
         let items = [], currentSlide = 0, currentImages = [];
+        let activeTag = null;
+        let searchQuery = '';
 
         async function loadBoutique() {
             try {
                 const r = await fetch(BOUTIQUE_JSON_URL + '?t=' + Date.now());
                 items = await r.json();
+                renderTagFilters();
                 renderGrid();
             } catch(e) { console.error("Erreur", e); }
+        }
+
+        // --- TAGS ---
+        function getAllTags() {
+            const set = new Set();
+            items.forEach(i => (i.tags || []).forEach(t => set.add(t)));
+            return [...set].sort();
+        }
+
+        function renderTagFilters() {
+            const container = document.getElementById('tag-filters');
+            const tags = getAllTags();
+            container.innerHTML = '';
+            if (!tags.length) return;
+
+            const allPill = document.createElement('span');
+            allPill.className = 'tag-pill' + (activeTag === null ? ' active' : '');
+            allPill.innerText = '✦ Tous';
+            allPill.onclick = () => { activeTag = null; renderTagFilters(); renderGrid(); };
+            container.appendChild(allPill);
+
+            tags.forEach(tag => {
+                const pill = document.createElement('span');
+                pill.className = 'tag-pill' + (activeTag === tag ? ' active' : '');
+                pill.innerText = tag;
+                pill.onclick = () => { activeTag = (activeTag === tag) ? null : tag; renderTagFilters(); renderGrid(); };
+                container.appendChild(pill);
+            });
+        }
+
+        function applySearch() {
+            searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+            renderGrid();
+        }
+
+        function getFilteredItems() {
+            return items.filter(item => {
+                const matchTag = !activeTag || (item.tags || []).includes(activeTag);
+                const matchSearch = !searchQuery ||
+                    (item.title || '').toLowerCase().includes(searchQuery) ||
+                    (item.tags || []).some(t => t.toLowerCase().includes(searchQuery)) ||
+                    (item.condition || '').toLowerCase().includes(searchQuery);
+                return matchTag && matchSearch;
+            });
         }
 
         function renderGrid() {
             const grid = document.getElementById('grid');
             grid.innerHTML = '';
-            document.getElementById('stock-count').innerText = `${items.length} PIÈCES`;
+            const filtered = getFilteredItems();
+            document.getElementById('stock-count').innerText = `${filtered.length} / ${items.length} PIÈCES`;
 
-            items.forEach((item) => {
+            if (!filtered.length) {
+                grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:80px 0;color:#333;">
+                    <div style="font-size:40px;margin-bottom:12px;">🔍</div>
+                    <p style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;">Aucun article trouvé</p>
+                </div>`;
+                return;
+            }
+
+            filtered.forEach((item) => {
                 const card = document.createElement('div');
                 card.className = 'card group cursor-pointer';
                 card.onclick = () => openModal(item);
+                const tagsHtml = (item.tags || []).length
+                    ? `<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px;">${(item.tags||[]).map(t=>`<span onclick="event.stopPropagation();filterByTag('${t}')" style="padding:3px 9px;border-radius:20px;background:rgba(201,169,110,0.08);border:1px solid rgba(201,169,110,0.15);color:#c9a96e;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;letter-spacing:0.05em;transition:0.2s;" onmouseover="this.style.background='rgba(201,169,110,0.18)'" onmouseout="this.style.background='rgba(201,169,110,0.08)'">${t}</span>`).join('')}</div>`
+                    : '';
                 card.innerHTML = `
                     <div class="relative w-full aspect-[4/5] bg-black overflow-hidden">
                         <div class="badge-status">${item.condition || 'Occasion'}</div>
@@ -176,10 +266,18 @@
                     <div class="p-6 text-center">
                         <h3 class="text-sm font-bold text-white mb-2 uppercase tracking-wide truncate">${item.title}</h3>
                         <span class="text-xl font-black" style="color:var(--gold)">${item.custom_price || '— €'}</span>
+                        ${tagsHtml}
                     </div>
                 `;
                 grid.appendChild(card);
             });
+        }
+
+        function filterByTag(tag) {
+            activeTag = (activeTag === tag) ? null : tag;
+            renderTagFilters();
+            renderGrid();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function openModal(item) {
@@ -188,6 +286,11 @@
             document.getElementById('m-title').innerText = item.title;
             document.getElementById('m-price').innerText = item.custom_price || '— €';
             document.getElementById('m-condition-badge').innerText = item.condition || 'Occasion';
+            // Tags
+            const tagsEl = document.getElementById('m-tags-display');
+            tagsEl.innerHTML = (item.tags || []).map(t =>
+                `<span onclick="closeModal();filterByTag('${t}')" style="display:inline-block;padding:3px 10px;border-radius:7px;background:rgba(201,169,110,0.1);border:1px solid rgba(201,169,110,0.2);color:#c9a96e;font-size:10px;font-weight:900;text-transform:uppercase;cursor:pointer;">${t}</span>`
+            ).join('');
             renderGallery();
             document.getElementById('modal').classList.add('open');
             document.body.style.overflow = 'hidden';
