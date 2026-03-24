@@ -257,7 +257,10 @@
     "seller_stars": 4.99,
     "detected_at": "11:31",
     "resale_price": "260",
-    "custom_price": "350,00 €"
+    "custom_price": "350,00 €",
+    "tags": [
+      "Louis vuitton"
+    ]
   },
   {
     "title": "Sac bandoulière Louis Vuitton, modèle Randonee GM, M42244",
