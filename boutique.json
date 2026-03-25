@@ -127,6 +127,7 @@
     "custom_price": "120,00 €",
     "tags": [
       "Louis vuitton"
-    ]
+    ],
+    "visibility": "public"
   }
 ]
